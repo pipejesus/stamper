@@ -1,0 +1,9 @@
+# Freshness metadata for bundled skills. Bump `updated` whenever a skill's
+# content is re-researched; stamper uses it to nag about stale knowledge.
+skills:
+  wp-gutenberg-blocks:
+    updated: 2026-11-19
+  css-modern:
+    updated: 2026-11-19
+  php-modern:
+    updated: 2026-11-19
