@@ -33,6 +33,7 @@ const (
 	nginxConf  = supportDir + "/nginx.conf"
 	setupSh    = supportDir + "/wp-setup.sh"
 	setupCmd   = "bash /app/" + setupSh
+	wpCLIYml   = "wp-cli.yml"
 )
 
 // owned lists every Landofile location this recipe may write. Locations a
@@ -104,6 +105,8 @@ type tplData struct {
 	OpcacheOn, OpcacheValidate, JIT       bool
 	OpcacheFreq                           int
 	Hash                                  string
+	Nested                                bool // WordPress lives in a subfolder (e.g. public_html)
+	Marker                                string
 }
 
 func (rc *Recipe) Plan(v r.Values) (*r.Plan, error) {
@@ -280,6 +283,7 @@ func (rc *Recipe) Plan(v r.Values) (*r.Plan, error) {
 	// ---- support files ------------------------------------------------------
 	d := tplData{
 		Values: v, Webserver: ws, PHP: v.Get(kPHP), Webroot: v.Get(kWebroot), URL: url,
+		Nested: v.Get(kWebroot) != ".", Marker: r.ManagedMarker,
 		SiteURL:   "https://" + url,
 		Multisite: v.Get(kMultisite) != "no", Subdomains: v.Get(kMultisite) == "subdomain",
 		Install:   install,
@@ -326,6 +330,23 @@ func (rc *Recipe) Plan(v r.Values) (*r.Plan, error) {
 	}
 	p.Files = append(p.Files, r.File{Path: setupSh, Content: sh, Mode: 0o755})
 	p.Files = append(p.Files, r.File{Path: supportDir + "/.gitignore", Content: []byte("# stamper runtime markers\n*.applied\n")})
+
+	// Project-root files: wp-cli.yml lets `lando wp` work from the project
+	// root; .gitignore is a one-time starting point the user then owns.
+	if d.Nested {
+		yml, err := render("wp-cli.yml.tmpl", d)
+		if err != nil {
+			return nil, err
+		}
+		p.Files = append(p.Files, r.File{Path: wpCLIYml, Content: yml, Policy: r.IfManaged})
+	} else {
+		p.Remove = append(p.Remove, wpCLIYml)
+	}
+	gi, err := render("gitignore.tmpl", d)
+	if err != nil {
+		return nil, err
+	}
+	p.Files = append(p.Files, r.File{Path: ".gitignore", Content: gi, Policy: r.Once})
 
 	// ---- notes ----------------------------------------------------------------
 	if !strings.HasSuffix(url, ".lndo.site") {

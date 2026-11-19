@@ -108,7 +108,21 @@ type File struct {
 	Path    string // relative to the project dir
 	Content []byte
 	Mode    fs.FileMode
+	Policy  Policy
 }
+
+// ManagedMarker must appear in every file stamper may overwrite or remove
+// outside its own .lando/stamper/ directory.
+const ManagedMarker = "Managed by stamper"
+
+// Policy decides what happens when a support file already exists.
+type Policy int
+
+const (
+	Always    Policy = iota // stamper's own files: always rewritten
+	IfManaged               // rewritten only while it still carries ManagedMarker
+	Once                    // created if missing, then owned by the user
+)
 
 // Plan is everything needed to materialise (or update) an environment.
 type Plan struct {

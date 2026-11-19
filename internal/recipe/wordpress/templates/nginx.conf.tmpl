@@ -31,6 +31,7 @@ server {
   # Never serve dotfiles (except .well-known) or PHP from uploads.
   location ~ /\.(?!well-known) { deny all; }
   location ~* /(?:uploads|files)/.*\.php$ { deny all; }
+  location ~* \.(?:sql|gz|log|ini|sh|ya?ml)$ { deny all; }
 {{- if and .Multisite (not .Subdomains)}}
 
   # Multisite (subdirectories): map /site/wp-* and /site/*.php to core files.

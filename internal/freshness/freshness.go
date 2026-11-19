@@ -72,9 +72,12 @@ func Check(dir, version string, now time.Time) []Hint {
 	if p, err := project.Open(dir); err == nil && p.State != nil {
 		if rc, err := recipe.Get(p.State.Recipe); err == nil {
 			rev := recipe.RevisionOf(rc)
-			stamped, _ := time.Parse(time.DateOnly, p.State.Revision)
+			stamped, err := time.Parse(time.RFC3339, p.State.Revision)
+			if err != nil {
+				stamped, _ = time.Parse(time.DateOnly, p.State.Revision)
+			}
 			if !rev.IsZero() && stamped.Before(rev) {
-				hints = append(hints, Hint{fmt.Sprintf("this project's Lando config was rendered by an older %s recipe (%s → %s)", rc.Name(), orUnknown(p.State.Revision), rev.Format(time.DateOnly)), "stamper config upgrade"})
+				hints = append(hints, Hint{fmt.Sprintf("this project's Lando config was rendered by an older %s recipe (%s → %s)", rc.Name(), orUnknown(p.State.Revision), rev.UTC().Format(time.RFC3339)), "stamper config upgrade"})
 			}
 		}
 	}

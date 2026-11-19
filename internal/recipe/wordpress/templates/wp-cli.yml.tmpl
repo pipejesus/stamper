@@ -1,0 +1,7 @@
+# {{.Marker}}: rewritten by `stamper config`. Delete this line to take the file over.
+# Lets `lando wp …` run from the project root against the WordPress in {{.Webroot}}/.
+path: {{.Webroot}}
+{{- if ne .Webserver "nginx"}}
+apache_modules:
+  - mod_rewrite
+{{- end}}

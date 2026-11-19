@@ -33,6 +33,10 @@ fi
 if [[ ! -f wp-config.php && ! -f ../wp-config.php ]]; then
   say "Creating wp-config.php"
   wp config create --dbname=wordpress --dbuser=wordpress --dbpass=wordpress --dbhost=database --skip-check || exit 1
+  {{- if .Nested}}
+  # Keep secrets out of the web root: WordPress finds wp-config.php one level up.
+  mv wp-config.php ../wp-config.php
+  {{- end}}
 fi
 {{- end}}
 
@@ -45,7 +49,12 @@ if wp config path >/dev/null 2>&1; then
 
   cfg WP_ENVIRONMENT_TYPE local
   cfg WP_DEBUG true --raw
+  {{- if .Nested}}
+  mkdir -p /app/logs
+  cfg WP_DEBUG_LOG /app/logs/debug.log
+  {{- else}}
   cfg WP_DEBUG_LOG true --raw
+  {{- end}}
   cfg WP_DEBUG_DISPLAY false --raw
   cfg SCRIPT_DEBUG true --raw
   cfg WP_CACHE_KEY_SALT {{sh (printf "%s:" .URL)}}
@@ -100,9 +109,25 @@ fi
 {{- end}}
 {{- if ne .Webserver "nginx"}}
 
-if [[ ! -f .htaccess ]]; then
-  say "Writing .htaccess"
-  cat > .htaccess <<'HTACCESS'
+# Apache/OpenLiteSpeed hardening (nginx gets the same rules in its vhost).
+touch .htaccess
+if ! grep -q "# BEGIN stamper" .htaccess; then
+  say "Adding stamper hardening to .htaccess"
+  { cat <<'HARDEN'
+# BEGIN stamper
+# {{.Marker}}: deny dotfiles (except .well-known) and stray dumps, logs and configs.
+RedirectMatch 404 "/\.(?!well-known)"
+<FilesMatch "\.(?:sql|gz|log|ini|sh|ya?ml)$">
+  Require all denied
+</FilesMatch>
+# END stamper
+
+HARDEN
+  cat .htaccess; } > .htaccess.stamper && mv .htaccess.stamper .htaccess
+fi
+if ! grep -q "# BEGIN WordPress" .htaccess; then
+  say "Adding WordPress rewrite rules to .htaccess"
+  cat >> .htaccess <<'HTACCESS'
 # BEGIN WordPress
 <IfModule mod_rewrite.c>
 RewriteEngine On
@@ -133,6 +158,12 @@ RewriteRule . /index.php [L]
 </IfModule>
 # END WordPress
 HTACCESS
+fi
+
+# Never execute PHP from uploads.
+if [[ -d wp-content && ! -f wp-content/uploads/.htaccess ]]; then
+  mkdir -p wp-content/uploads
+  printf '%s\n' '# {{.Marker}}' '<FilesMatch "\.(?:php[0-9]?|phtml|phar)$">' '  Require all denied' '</FilesMatch>' > wp-content/uploads/.htaccess
 fi
 {{- end}}
 

@@ -49,20 +49,29 @@ git tag v0.2.0 && git push --tags  # CI builds and publishes the release
 
 `stamper recipes wordpress` (or `stamper config options`) lists every key and value.
 
-### What gets written
+### Project layout
 
 ```
-.lando.yml                  # Landofile; stamper only reconciles the keys it owns
-.lando/stamper/state.yml    # recipe + chosen values (source of truth for `stamper config`)
-.lando/stamper/php.ini      # limits, OPcache/JIT, APCu, Xdebug trigger mode
-.lando/stamper/nginx.conf   # Nginx only: vhost with upload limit and multisite rewrites
-.lando/stamper/wp-setup.sh  # idempotent bootstrap, runs on every `lando start` / `lando wp-setup`
+myshop/                          project root: git repo, agents and tooling run here
+├── .lando.yml                   Landofile; stamper reconciles only the keys it owns
+├── .lando/stamper/              state.yml (source of truth), php.ini, nginx.conf, wp-setup.sh
+├── wp-cli.yml                   path: public_html, so `lando wp` works from the root (managed)
+├── wp-config.php                one level above the web root (WordPress looks there natively)
+├── logs/debug.log               WP_DEBUG_LOG, outside the web root
+├── .gitignore                   created once for this layout, then yours
+└── public_html/                 web root: WordPress core, wp-content/ (themes, plugins, mu-plugins)
 ```
 
-The setup script downloads and installs WordPress if needed, then sets `WP_ENVIRONMENT_TYPE=local`
-and the debug constants, and wires up the object cache (`WP_REDIS_HOST`, plus the redis-cache drop-in unless
-you pass `--cache-plugin=false`). It writes `.htaccess` for Apache/OLS. It hashes its inputs and exits
-straight away when nothing changed.
+`--webroot .` puts WordPress in the project root instead; any other folder name works too.
+Files stamper writes outside `.lando/stamper/` carry a `Managed by stamper` line. Delete that line
+and stamper leaves the file alone from then on.
+
+The setup script runs on every `lando start` (and via `lando wp-setup`). If WordPress isn't there
+yet it downloads and installs it. It sets `WP_ENVIRONMENT_TYPE=local` and the debug constants,
+and wires up the object cache (`WP_REDIS_HOST`, plus the redis-cache drop-in unless you pass
+`--cache-plugin=false`). On Apache/OpenLiteSpeed it hardens `.htaccess`: it denies dotfiles,
+SQL dumps, logs and configs, and blocks PHP in uploads. The nginx vhost has the same rules.
+The script hashes its inputs and exits straight away when nothing changed.
 
 ### Changing an environment
 

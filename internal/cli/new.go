@@ -252,6 +252,9 @@ func reportApply(w io.Writer, dir string, res *project.Result) {
 	for _, f := range res.Removed {
 		tui.Print(w, tui.Muted.Render("− removed "+f))
 	}
+	for _, f := range res.Kept {
+		tui.Print(w, tui.Muted.Render("= kept your "+f))
+	}
 }
 
 func printWarnings(w io.Writer, warnings []string) {

@@ -21,9 +21,10 @@ func New() *Recipe { return &Recipe{} }
 func (*Recipe) Name() string { return "wordpress" }
 
 // revision is when this recipe's version tables (Lando 3.26 / @lando/php 1.12,
-// MariaDB, MySQL, Redis, OLS images) were last checked against upstream.
-// Bump it whenever those tables or the generated files change.
-var revision = time.Date(2026, 11, 19, 0, 0, 0, 0, time.UTC)
+// MariaDB, MySQL, Redis, OLS images) or generated files last changed.
+// Bump it (date + time) with every such change: projects stamped earlier get
+// a `stamper config upgrade` hint.
+var revision = time.Date(2026, 11, 19, 12, 40, 0, 0, time.UTC)
 
 // Revision implements recipe.Revisioned.
 func (*Recipe) Revision() time.Time { return revision }
@@ -58,10 +59,7 @@ func (*Recipe) Normalize(in r.Values) r.Values {
 	if v[kAdminEmail] == "" && v[kURL] != "" {
 		v[kAdminEmail] = "admin@" + v[kURL]
 	}
-	if v[kWebroot] == "" {
-		v[kWebroot] = "."
-	}
-	v[kWebroot] = strings.Trim(v[kWebroot], "/")
+	v[kWebroot] = strings.Trim(strings.TrimPrefix(v[kWebroot], "./"), "/")
 	if v[kWebroot] == "" {
 		v[kWebroot] = "."
 	}

@@ -1,0 +1,43 @@
+# Created once by stamper as a starting point; it is yours now (stamper never rewrites it).
+# Track your own code; WordPress core, uploads and third-party code come from
+# `lando start` (wp core download) or production.
+{{- if .Nested}}
+/{{.Webroot}}/*
+!/{{.Webroot}}/wp-content/
+/{{.Webroot}}/wp-content/*
+!/{{.Webroot}}/wp-content/themes/
+!/{{.Webroot}}/wp-content/plugins/
+!/{{.Webroot}}/wp-content/mu-plugins/
+/{{.Webroot}}/wp-content/themes/twenty*/
+/{{.Webroot}}/wp-content/plugins/akismet/
+/{{.Webroot}}/wp-content/plugins/hello.php
+/{{.Webroot}}/wp-content/plugins/index.php
+/{{.Webroot}}/wp-content/themes/index.php
+{{- else}}
+/wp-admin/
+/wp-includes/
+/wp-*.php
+!/wp-config-sample.php
+/index.php
+/license.txt
+/readme.html
+/xmlrpc.php
+/.htaccess
+/wp-content/*
+!/wp-content/themes/
+!/wp-content/plugins/
+!/wp-content/mu-plugins/
+/wp-content/themes/twenty*/
+/wp-content/plugins/akismet/
+/wp-content/plugins/hello.php
+{{- end}}
+
+# Local-only
+/wp-config.php
+/logs/
+.lando.local.yml
+*.sql
+*.sql.gz
+*.log
+node_modules/
+.DS_Store

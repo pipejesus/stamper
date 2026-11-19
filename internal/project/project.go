@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pipejesus/stamper/internal/lando"
@@ -101,6 +102,15 @@ type Result struct {
 	Landofile string
 	Written   []string
 	Removed   []string
+	Kept      []string // existing files left alone (user-owned)
+}
+
+func isManaged(path string) (exists, managed bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false, false
+	}
+	return true, strings.Contains(string(data), recipe.ManagedMarker)
 }
 
 // Apply writes the plan. On a fresh project the Landofile is the managed
@@ -120,12 +130,21 @@ func (p *Project) Apply(r recipe.Recipe, v recipe.Values, plan *recipe.Plan, ver
 		if mode == 0 {
 			mode = 0o644
 		}
-		if err := lando.WriteAtomic(filepath.Join(p.Dir, f.Path), f.Content, mode); err != nil {
+		dst := filepath.Join(p.Dir, f.Path)
+		if exists, managed := isManaged(dst); exists && (f.Policy == recipe.Once || (f.Policy == recipe.IfManaged && !managed)) {
+			res.Kept = append(res.Kept, f.Path)
+			continue
+		}
+		if err := lando.WriteAtomic(dst, f.Content, mode); err != nil {
 			return nil, err
 		}
 		res.Written = append(res.Written, f.Path)
 	}
 	for _, rel := range plan.Remove {
+		// Only ever delete files stamper wrote and nobody took over.
+		if _, managed := isManaged(filepath.Join(p.Dir, rel)); !managed {
+			continue
+		}
 		err := os.Remove(filepath.Join(p.Dir, rel))
 		if err == nil {
 			res.Removed = append(res.Removed, rel)
@@ -135,7 +154,7 @@ func (p *Project) Apply(r recipe.Recipe, v recipe.Values, plan *recipe.Plan, ver
 	}
 	p.State = &State{Stamper: version, Recipe: r.Name(), Values: v}
 	if rev := recipe.RevisionOf(r); !rev.IsZero() {
-		p.State.Revision = rev.Format(time.DateOnly)
+		p.State.Revision = rev.UTC().Format(time.RFC3339)
 	}
 	data, err := yaml.Marshal(p.State)
 	if err != nil {

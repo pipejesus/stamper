@@ -79,8 +79,36 @@ func TestPlanApacheDefaults(t *testing.T) {
 	if strings.Contains(out, "proxy:\n  appserver") {
 		t.Errorf("default lndo.site host should not need a proxy entry:\n%s", out)
 	}
-	if len(p.Files) < 3 {
-		t.Errorf("expected support files, got %d", len(p.Files))
+	files := map[string]string{}
+	for _, f := range p.Files {
+		files[f.Path] = string(f.Content)
+	}
+	if !strings.Contains(out, "webroot: public_html") {
+		t.Errorf("default web root should be public_html:\n%s", out)
+	}
+	if !strings.Contains(files[wpCLIYml], "path: public_html") {
+		t.Errorf("wp-cli.yml missing or wrong: %q", files[wpCLIYml])
+	}
+	setup := files[setupSh]
+	for _, want := range []string{"mv wp-config.php ../wp-config.php", "WP_DEBUG_LOG /app/logs/debug.log", "# BEGIN stamper", "wp-content/uploads/.htaccess"} {
+		if !strings.Contains(setup, want) {
+			t.Errorf("setup script lacks %q", want)
+		}
+	}
+	if !strings.Contains(files[".gitignore"], "/public_html/*") {
+		t.Errorf(".gitignore not tuned for public_html:\n%s", files[".gitignore"])
+	}
+}
+
+func TestPlanFlatWebroot(t *testing.T) {
+	_, p := renderPlan(t, values(t, "url", "flat.lndo.site", "webroot", "."))
+	for _, f := range p.Files {
+		if f.Path == wpCLIYml {
+			t.Error("flat layout must not write wp-cli.yml")
+		}
+		if f.Path == setupSh && strings.Contains(string(f.Content), "mv wp-config.php") {
+			t.Error("flat layout must keep wp-config.php in place")
+		}
 	}
 }
 

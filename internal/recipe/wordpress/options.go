@@ -90,8 +90,9 @@ func options() []r.Option {
 				}
 				return nil
 			}},
-		{Key: kWebroot, Group: "Site", Title: "Web root", Kind: r.String, Default: ".",
-			Help: "Directory (relative to the project) that holds WordPress, e.g. '.', 'wordpress', 'web'.",
+		{Key: kWebroot, Group: "Site", Title: "Web root", Kind: r.String, Default: "public_html",
+			Help:          "Folder that holds WordPress. Config, tooling and logs stay one level up, outside the web root. '.' puts WordPress in the project root.",
+			ChangeWarning: "Changing the web root does not move files: move WordPress into the new folder yourself (wp-config.php stays one level above it), then `lando rebuild -y`.",
 			Validate: func(s string) error {
 				if strings.HasPrefix(s, "/") || strings.Contains(s, "..") {
 					return fmt.Errorf("%q must be a relative path inside the project", s)
