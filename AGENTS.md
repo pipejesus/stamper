@@ -1,6 +1,6 @@
 # stamper: agent guide
 
-Instructions for any coding agent (Codex, Claude Code, Cursor, Copilot, Gemini CLI, …) and for human contributors. `CLAUDE.md` only imports this file, so edit this file, not that one.
+Instructions for any coding agent (Codex, Claude Code ≥ 2.1.277, Cursor, Copilot, Gemini CLI, …) and for human contributors. This is the only instructions file: don't add a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. Claude Code reads AGENTS.md only when none of those exist.
 
 Go CLI (module `github.com/pipejesus/stamper`; cobra + charm fang/huh/lipgloss v2 from `charm.land/...`) that stamps Lando environments from modular recipes and installs embedded agent skills. README.md covers usage, layout and architecture. Open work is in BACKLOG.md.
 
