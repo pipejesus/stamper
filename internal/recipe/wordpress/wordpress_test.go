@@ -114,7 +114,7 @@ func TestPlanFlatWebroot(t *testing.T) {
 
 func TestPlanNginxRedisVarnish(t *testing.T) {
 	out, p := renderPlan(t, values(t, "url", "shop.lndo.site", "webserver", "nginx", "object-cache", "redis:8", "page-cache", "varnish:6", "php-extensions", "igbinary,pcov", "multisite", "subdirectory"))
-	for _, want := range []string{"via: nginx:1.29", "vhosts: .lando/stamper/nginx.conf", "type: redis:8", "appserver_nginx", "install-php-extensions igbinary pcov", "edge.shop.lndo.site"} {
+	for _, want := range []string{"via: nginx:1.29", "vhosts: .lando/stamper/nginx.conf", "type: redis:8", "appserver_nginx", "install-php-extensions igbinary || echo", "install-php-extensions pcov || echo", "edge.shop.lndo.site"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q:\n%s", want, out)
 		}

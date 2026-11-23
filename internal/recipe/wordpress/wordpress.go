@@ -24,7 +24,7 @@ func (*Recipe) Name() string { return "wordpress" }
 // MariaDB, MySQL, Redis, OLS images) or generated files last changed.
 // Bump it (date + time) with every such change: projects stamped earlier get
 // a `stamper config upgrade` hint.
-var revision = time.Date(2026, 11, 19, 12, 40, 0, 0, time.UTC)
+var revision = time.Date(2026, 11, 23, 11, 45, 0, 0, time.UTC)
 
 // Revision implements recipe.Revisioned.
 func (*Recipe) Revision() time.Time { return revision }

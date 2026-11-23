@@ -3,6 +3,8 @@
 Open items as of 2026-11-19 (end of the first session). Newest decisions are in git history.
 
 ## Small fixes
+- WP-CLI 2.12 phar prints `Case statements followed by a semicolon` deprecations on PHP 8.5 (bundled react/promise). Consider `WP_CLI_PHP_ARGS=-d error_reporting=E_ALL&~E_DEPRECATED` on appserver for PHP 8.5, or wait for a wp-cli release.
+- `memcache` extension doesn't compile on PHP 8.5 (now skipped with a warning). Re-test when PECL memcache ships 8.5 support.
 - [ ] **WP-CLI deprecation noise on PHP 8.5:** every `lando wp` prints `Case statements followed by a semicolon` from WP-CLI's bundled react/promise. Quiet `E_DEPRECATED` for WP-CLI only (e.g. a `wp` tooling override running `php -d error_reporting=24575 /usr/local/bin/wp`, used by the setup script too), and keep deprecations visible for the site.
 - [ ] **MariaDB 11 healthcheck retries:** Lando's default healthcheck calls the deprecated `mysql` binary and retries a few times. Set `services.database.healthcheck` to `mariadb-admin ping …` for mariadb ≥ 10.4 (and add the path to `owned`).
 - [ ] **PHP 8.6 status:** GA was scheduled for 2026-11-19, but php.net still showed 8.5.12 at 11:20 UTC. Once released, update the status line in `internal/skills/library/php-modern/references/php-8.6.md` (and SKILL.md if it says "scheduled"), then bump `manifest.yml`. Add 8.6 to the PHP choices once @lando/php ships images.

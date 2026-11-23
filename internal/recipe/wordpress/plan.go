@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -179,7 +180,19 @@ func (rc *Recipe) Plan(v r.Values) (*r.Plan, error) {
 		p.Warnings = append(p.Warnings, "OpenLiteSpeed is experimental: it runs the official litespeedtech image as a custom Lando service. WebAdmin listens on port 7080 inside the container.")
 	} else {
 		if exts := v.List(kExtensions); len(exts) > 0 {
-			add(appserver, "build_as_root", lando.Seq(lando.Tagged("install-php-extensions "+strings.Join(exts, " "))))
+			// One non-fatal step per extension: Lando aborts the whole build on
+			// the first failing command, and the recipe's wp-cli download runs
+			// after build_as_root, so one broken extension used to leave the
+			// container without `wp`.
+			steps := make([]any, 0, len(exts))
+			for _, e := range exts {
+				steps = append(steps, lando.Tagged(fmt.Sprintf(
+					"install-php-extensions %s || echo 'stamper: PHP extension %s failed to build, skipped'", e, e)))
+			}
+			add(appserver, "build_as_root", lando.Seq(steps...))
+			if slices.Contains(exts, "memcache") && v.Get(kPHP) == "8.5" {
+				p.Warnings = append(p.Warnings, "the memcache extension does not compile on PHP 8.5 yet and will be skipped; use PHP 8.4 or the built-in memcached extension")
+			}
 		}
 	}
 	if len(appserver.Content) > 0 {
